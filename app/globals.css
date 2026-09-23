@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background: #f7f2e7;
+  color: #2b2318;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid #c77d26;
+  outline-offset: 1px;
+}
