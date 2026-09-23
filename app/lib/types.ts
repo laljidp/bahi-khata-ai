@@ -1,12 +1,19 @@
 export type EntryType = "credit" | "payment";
 
+export interface AuthUser {
+  id: string;
+  shopName: string;
+  phone: string;
+}
+
 export interface Entry {
   id: string;
   type: EntryType;
   amount: number;
-  date: string; // ISO yyyy-mm-dd
+  date: string; // ISO string or yyyy-mm-dd
   item?: string;
   note?: string;
+  notes?: string;
 }
 
 export interface Customer {

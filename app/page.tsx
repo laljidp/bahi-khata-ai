@@ -10,11 +10,24 @@ import CustomerDetail from "./components/CustomerDetail";
 import CustomerSheet from "./components/CustomerSheet";
 import EntrySheet from "./components/EntrySheet";
 import Toast from "./components/Toast";
+import AuthModal from "./components/AuthModal";
 
 export type View = "dashboard" | "customers" | "detail";
 
 export default function Page() {
-  const { db, setDB, ready } = useDB();
+  const {
+    user,
+    setUser,
+    authLoading,
+    loadingData,
+    db,
+    saveCustomer,
+    deleteCustomer,
+    saveEntry,
+    deleteEntry,
+    logout,
+  } = useDB();
+
   const [view, setView] = useState<View>("dashboard");
   const [customerId, setCustomerId] = useState<string | null>(null);
 
@@ -41,18 +54,12 @@ export default function Page() {
     setView("detail");
   }
 
-  function saveCustomer(c: Customer) {
-    setDB((prev) => {
-      const exists = prev.customers.some((x) => x.id === c.id);
-      return {
-        customers: exists
-          ? prev.customers.map((x) => (x.id === c.id ? c : x))
-          : [...prev.customers, c],
-      };
-    });
+  async function handleSaveCustomer(c: Customer) {
+    const isNew = !editingCustomer;
     setCustSheetOpen(false);
-    if (!editingCustomer) {
-      setCustomerId(c.id);
+    const saved = await saveCustomer(c);
+    if (isNew) {
+      setCustomerId(saved.id);
       setView("detail");
       flash("Customer added");
     } else {
@@ -60,47 +67,54 @@ export default function Page() {
     }
   }
 
-  function deleteCustomer() {
+  async function handleDeleteCustomer() {
     if (!customerId) return;
-    setDB((prev) => ({
-      customers: prev.customers.filter((c) => c.id !== customerId),
-    }));
+    const idToDelete = customerId;
     setCustSheetOpen(false);
     setView("customers");
+    setCustomerId(null);
+    await deleteCustomer(idToDelete);
     flash("Customer removed");
   }
 
-  function saveEntry(e: Entry) {
+  async function handleSaveEntry(e: Entry) {
     if (!customerId) return;
-    setDB((prev) => ({
-      customers: prev.customers.map((c) => {
-        if (c.id !== customerId) return c;
-        const exists = c.entries.some((x) => x.id === e.id);
-        return {
-          ...c,
-          entries: exists
-            ? c.entries.map((x) => (x.id === e.id ? e : x))
-            : [...c.entries, e],
-        };
-      }),
-    }));
     setEntrySheetOpen(false);
+    await saveEntry(customerId, e);
     flash(e.type === "credit" ? "Credit entry added" : "Payment recorded");
   }
 
-  function deleteEntry(id: string) {
+  async function handleDeleteEntry(id: string) {
     if (!customerId) return;
-    setDB((prev) => ({
-      customers: prev.customers.map((c) =>
-        c.id === customerId
-          ? { ...c, entries: c.entries.filter((e) => e.id !== id) }
-          : c
-      ),
-    }));
+    await deleteEntry(customerId, id);
     flash("Entry deleted");
   }
 
-  if (!ready) return null;
+  // Initial authentication check
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-paper">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-amber border-t-transparent" />
+          <div className="mt-3 font-slab text-sm font-semibold text-ink">
+            Loading Bahi Khata...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in, show AuthModal
+  if (!user) {
+    return (
+      <AuthModal
+        onSuccess={(loggedUser) => {
+          setUser(loggedUser);
+          flash(`Welcome, ${loggedUser.shopName}`);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-[100dvh]">
@@ -111,44 +125,55 @@ export default function Page() {
           setEditingCustomer(null);
           setCustSheetOpen(true);
         }}
+        user={user}
+        onLogout={logout}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader />
-        <Topbar view={view} />
+        <MobileHeader user={user} onLogout={logout} />
+        <Topbar view={view} user={user} onLogout={logout} />
 
-        <div className="mx-auto w-full max-w-[920px] flex-1 px-4 pb-[90px] pt-4 sm:px-8 sm:pb-8 sm:pt-7">
-          {view === "dashboard" && <Dashboard customers={db.customers} />}
-          {view === "customers" && (
-            <CustomersList customers={db.customers} onOpen={openCustomer} />
-          )}
-          {view === "detail" && customer && (
-            <CustomerDetail
-              customer={customer}
-              onBack={() => setView("customers")}
-              onEditCustomer={() => {
-                setEditingCustomer(customer);
-                setCustSheetOpen(true);
-              }}
-              onAddCredit={() => {
-                setEntryType("credit");
-                setEditingEntry(null);
-                setEntrySheetOpen(true);
-              }}
-              onAddPayment={() => {
-                setEntryType("payment");
-                setEditingEntry(null);
-                setEntrySheetOpen(true);
-              }}
-              onEditEntry={(e) => {
-                setEntryType(e.type);
-                setEditingEntry(e);
-                setEntrySheetOpen(true);
-              }}
-              onDeleteEntry={deleteEntry}
-            />
-          )}
-        </div>
+        {loadingData && db.customers.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center p-8">
+            <div className="text-center">
+              <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-amber border-t-transparent" />
+              <p className="mt-2 text-xs text-inkSoft">Syncing ledger...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto w-full max-w-[920px] flex-1 px-4 pb-[90px] pt-4 sm:px-8 sm:pb-8 sm:pt-7">
+            {view === "dashboard" && <Dashboard customers={db.customers} />}
+            {view === "customers" && (
+              <CustomersList customers={db.customers} onOpen={openCustomer} />
+            )}
+            {view === "detail" && customer && (
+              <CustomerDetail
+                customer={customer}
+                onBack={() => setView("customers")}
+                onEditCustomer={() => {
+                  setEditingCustomer(customer);
+                  setCustSheetOpen(true);
+                }}
+                onAddCredit={() => {
+                  setEntryType("credit");
+                  setEditingEntry(null);
+                  setEntrySheetOpen(true);
+                }}
+                onAddPayment={() => {
+                  setEntryType("payment");
+                  setEditingEntry(null);
+                  setEntrySheetOpen(true);
+                }}
+                onEditEntry={(e) => {
+                  setEntryType(e.type);
+                  setEditingEntry(e);
+                  setEntrySheetOpen(true);
+                }}
+                onDeleteEntry={handleDeleteEntry}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       <Fab
@@ -164,15 +189,15 @@ export default function Page() {
         open={custSheetOpen}
         onClose={() => setCustSheetOpen(false)}
         existing={editingCustomer}
-        onSave={saveCustomer}
-        onDelete={editingCustomer ? deleteCustomer : undefined}
+        onSave={handleSaveCustomer}
+        onDelete={editingCustomer ? handleDeleteCustomer : undefined}
       />
       <EntrySheet
         open={entrySheetOpen}
         onClose={() => setEntrySheetOpen(false)}
         type={entryType}
         existing={editingEntry}
-        onSave={saveEntry}
+        onSave={handleSaveEntry}
       />
 
       <Toast message={toast} />

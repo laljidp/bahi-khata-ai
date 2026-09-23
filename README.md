@@ -3,52 +3,86 @@
 A mobile-friendly web app for small shopkeepers to manage customers, track items given on credit, and clear dues when customers pay in cash.
 
 ## Features
+- **Multi-Tenant Shopkeeper Accounts** — Sign up & log in with Mobile Number and PIN/Password. Each shopkeeper's customer ledger is strictly isolated.
 - **Dashboard** — outstanding credit, customer count, customers with dues, settled count, recent activity
 - **Customers** — search, add, edit, delete
 - **Customer ledger** — add/edit/delete credit entries, record cash payments, running balance
-- Responsive: bottom tab bar on mobile, sidebar on desktop
-- Data is saved in the browser via `localStorage` (per device, no backend needed)
+- **Cloud Database** — backed by Supabase PostgreSQL via Prisma ORM
+- **Responsive** — bottom tab bar on mobile, sidebar on desktop
 
-## Getting started
+## Tech Stack
+- **Framework**: Next.js 16 (App Router + Turbopack) & React 19
+- **Database & ORM**: PostgreSQL (Supabase) + Prisma ORM
+- **Authentication**: Phone Number + PIN/Password, Bcrypt password hashing, and JWT session cookies (`jose`)
+- **Styling**: Tailwind CSS with custom Indian ledger color theme
+- **Package Manager**: pnpm
+
+## Getting Started
+
+### 1. Configure Environment Variables
+Copy `.env.example` to `.env` and provide your Supabase PostgreSQL connection string and a secret key:
 
 ```bash
-npm install
-npm run dev
+DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+JWT_SECRET="your_secure_random_string_32_characters_minimum"
+```
+
+> **Tip for Supabase with Next.js**: You can use either the direct connection (`port 5432`) or the Transaction Pooler connection string (`port 6543` with `?pgbouncer=true`).
+
+### 2. Push Database Schema
+Push the Prisma schema to your Supabase PostgreSQL instance:
+
+```bash
+pnpm prisma db push
+```
+
+### 3. Run Development Server
+
+```bash
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Build for production
+## Build for Production
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
-## Tech stack
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS
-- No external backend — all data lives in `localStorage` under the key `bahikhata_data_v1`
-
-## Project structure
+## Project Structure
 ```
 app/
-  layout.tsx          root layout, fonts
-  page.tsx             main app: view/state orchestration
+  layout.tsx                     root layout, fonts
+  page.tsx                       main app: view/state orchestration & auth gating
   globals.css
   lib/
-    types.ts           Customer/Entry types + helpers
-    useDB.ts            localStorage-backed state hook
+    types.ts                     Customer, Entry, and AuthUser types + helpers
+    prisma.ts                    Prisma client singleton
+    auth.ts                      Password hashing, JWT signing, session verification
+    useDB.ts                     Client-side state hook synced with backend API
+  api/
+    auth/
+      signup/route.ts            Shopkeeper registration
+      login/route.ts             Shopkeeper login
+      logout/route.ts            Shopkeeper session clearance
+      me/route.ts                Current authenticated shopkeeper profile
+    customers/
+      route.ts                   List and create customers for shopkeeper
+      [id]/route.ts              Update and delete customer
+      [id]/entries/route.ts      Add credit / payment entry
+      [id]/entries/[entryId]/route.ts Update and delete entry
   components/
-    Nav.tsx             sidebar, mobile header, bottom nav, FAB
+    AuthModal.tsx                Login & Signup modal for shopkeepers
+    Nav.tsx                      Sidebar, mobile header, topbar (with shop info & logout)
     Dashboard.tsx
     CustomersList.tsx
     CustomerDetail.tsx
-    CustomerSheet.tsx    add/edit customer modal
-    EntrySheet.tsx       add/edit credit/payment modal
-    Sheet.tsx            generic modal wrapper
+    CustomerSheet.tsx            Add/edit customer modal
+    EntrySheet.tsx               Add/edit credit/payment modal
+    Sheet.tsx                    Generic modal wrapper
     Toast.tsx
+prisma/
+  schema.prisma                  Prisma schema (User, Customer, Entry)
 ```
-
-## Notes / next steps
-Since data is stored per-browser, switching devices won't carry data over. To make this multi-device (e.g. shopkeeper uses phone and desktop), swap `useDB` for calls to a real backend/database — the rest of the app already works off plain `Customer[]` data, so the UI components won't need to change.
