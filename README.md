@@ -12,12 +12,15 @@ A mobile-friendly web app for small shopkeepers to manage customers, track items
 
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router + Turbopack) & React 19
-- **Database & ORM**: PostgreSQL (Supabase) + Prisma ORM
+- **Database & ORM**: PostgreSQL (Supabase) + Prisma ORM 7
 - **Authentication**: Phone Number + PIN/Password, Bcrypt password hashing, and JWT session cookies (`jose`)
 - **Styling**: Tailwind CSS with custom Indian ledger color theme
 - **Package Manager**: pnpm
 
 ## Getting Started
+
+Use Node.js 20.19+, 22.12+, or 24+. Install dependencies with `pnpm install`.
+Prisma Client is generated during installation and before development and production builds.
 
 ### 1. Configure Environment Variables
 Copy `.env.example` to `.env` and provide your Supabase PostgreSQL connection string and a secret key:
@@ -34,7 +37,12 @@ Push the Prisma schema to your Supabase PostgreSQL instance:
 
 ```bash
 pnpm prisma db push
+pnpm prisma generate
 ```
+
+The Prisma CLI loads `.env` through `prisma.config.ts`. Prisma 7 does not
+automatically regenerate the client after schema pushes; run `pnpm prisma generate`
+after schema changes.
 
 ### 3. Run Development Server
 
