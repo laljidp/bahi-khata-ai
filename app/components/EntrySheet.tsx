@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Sheet from "./Sheet";
-import { Entry, EntryType, uid } from "../lib/types";
+import { Entry, EntryType } from "../lib/types";
 
 const inputCls =
   "w-full rounded-md border border-paperLine bg-white px-3.5 py-2.5 font-sans text-sm text-ink";
@@ -29,7 +29,7 @@ export default function EntrySheet({
   const [item, setItem] = useState(existing?.item ?? "");
   const [amount, setAmount] = useState(existing ? String(existing.amount) : "");
   const [date, setDate] = useState(existing?.date.slice(0, 10) ?? todayISO());
-  const [note, setNote] = useState(existing?.note ?? "");
+  const [note, setNote] = useState(existing?.notes ?? "");
 
   const key = existing?.id ?? `new-${type}`;
   const [lastKey, setLastKey] = useState(key);
@@ -38,14 +38,14 @@ export default function EntrySheet({
     setItem(existing?.item ?? "");
     setAmount(existing ? String(existing.amount) : "");
     setDate(existing?.date.slice(0, 10) ?? todayISO());
-    setNote(existing?.note ?? "");
+    setNote(existing?.notes ?? "");
   }
 
   function handleSave() {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return;
     onSave({
-      id: existing?.id ?? uid(),
+      id: existing?.id ?? null,
       type,
       amount: amt,
       date: date || todayISO(),
@@ -57,7 +57,11 @@ export default function EntrySheet({
   return (
     <Sheet open={open} onClose={onClose}>
       <h3 className="mb-4 font-slab text-lg font-bold">
-        {existing ? "Edit entry" : isCredit ? "Add item on credit" : "Record cash payment"}
+        {existing
+          ? "Edit entry"
+          : isCredit
+            ? "Add item on credit"
+            : "Record cash payment"}
       </h3>
       {isCredit && (
         <div className="mb-3.5">

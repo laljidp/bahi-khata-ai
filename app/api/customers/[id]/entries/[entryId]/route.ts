@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function PATCH(
   req: Request,
-  props: { params: Promise<{ id: string; entryId: string }> }
+  props: { params: Promise<{ id: string; entryId: string }> },
 ) {
   const params = await props.params;
   const user = await getCurrentUser();
@@ -13,14 +13,6 @@ export async function PATCH(
   }
 
   try {
-    const customer = await prisma.customer.findFirst({
-      where: { id: params.id, userId: user.id },
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-    }
-
     const body = await req.json();
     const { amount, type, date, notes } = body;
 
@@ -30,7 +22,7 @@ export async function PATCH(
       if (isNaN(num) || num <= 0) {
         return NextResponse.json(
           { error: "Amount must be a positive number" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       data.amount = num;
@@ -39,7 +31,7 @@ export async function PATCH(
       if (type !== "credit" && type !== "payment") {
         return NextResponse.json(
           { error: "Invalid entry type" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       data.type = type;
@@ -54,11 +46,24 @@ export async function PATCH(
       data.notes = typeof notes === "string" ? notes.trim() || null : null;
     }
 
-    const updated = await prisma.entry.update({
-      where: { id: params.entryId, customerId: customer.id },
-      data,
+    const updated = await withRlsContext({ userId: user.id }, async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: params.id, userId: user.id },
+      });
+      if (!customer) return null;
+
+      return tx.entry.update({
+        where: { id: params.entryId, customerId: customer.id, notes },
+        data,
+      });
     });
 
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
+    }
     return NextResponse.json({
       entry: {
         id: updated.id,
@@ -72,14 +77,14 @@ export async function PATCH(
     console.error("Update entry error:", error);
     return NextResponse.json(
       { error: "Failed to update entry" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   _req: Request,
-  props: { params: Promise<{ id: string; entryId: string }> }
+  props: { params: Promise<{ id: string; entryId: string }> },
 ) {
   const params = await props.params;
   const user = await getCurrentUser();
@@ -88,24 +93,28 @@ export async function DELETE(
   }
 
   try {
-    const customer = await prisma.customer.findFirst({
-      where: { id: params.id, userId: user.id },
+    const deleted = await withRlsContext({ userId: user.id }, async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: params.id, userId: user.id },
+      });
+      if (!customer) return false;
+
+      const result = await tx.entry.deleteMany({
+        where: { id: params.entryId, customerId: customer.id },
+      });
+      return result.count > 0;
     });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!deleted) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
-
-    await prisma.entry.delete({
-      where: { id: params.entryId, customerId: customer.id },
-    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete entry error:", error);
     return NextResponse.json(
       { error: "Failed to delete entry" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

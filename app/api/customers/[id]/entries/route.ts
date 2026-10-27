@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function POST(
   req: Request,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
   const user = await getCurrentUser();
@@ -13,14 +13,6 @@ export async function POST(
   }
 
   try {
-    const customer = await prisma.customer.findFirst({
-      where: { id: params.id, userId: user.id },
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-    }
-
     const body = await req.json();
     const { amount, type, date, notes } = body;
 
@@ -28,28 +20,41 @@ export async function POST(
     if (isNaN(numAmount) || numAmount <= 0) {
       return NextResponse.json(
         { error: "Amount must be a positive number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (type !== "credit" && type !== "payment") {
       return NextResponse.json(
         { error: "Invalid entry type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const parsedDate = date ? new Date(date) : new Date();
+    const entry = await withRlsContext({ userId: user.id }, async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: params.id, userId: user.id },
+      });
+      if (!customer) return null;
 
-    const entry = await prisma.entry.create({
-      data: {
-        amount: numAmount,
-        type,
-        date: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
-        notes: typeof notes === "string" ? notes.trim() || null : null,
-        customerId: customer.id,
-      },
+      return tx.entry.create({
+        data: {
+          amount: numAmount,
+          type,
+          date: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
+          notes: typeof notes === "string" ? notes.trim() || null : null,
+          customerId: customer.id,
+        },
+      });
     });
+
+    if (!entry) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json({
       entry: {
@@ -64,7 +69,7 @@ export async function POST(
     console.error("Create entry error:", error);
     return NextResponse.json(
       { error: "Failed to create entry" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

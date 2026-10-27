@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -9,15 +9,17 @@ export async function GET() {
   }
 
   try {
-    const customers = await prisma.customer.findMany({
-      where: { userId: user.id },
-      include: {
-        entries: {
-          orderBy: { date: "desc" },
+    const customers = await withRlsContext({ userId: user.id }, (tx) =>
+      tx.customer.findMany({
+        where: { userId: user.id },
+        include: {
+          entries: {
+            orderBy: { date: "desc" },
+          },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      })
+    );
 
     const formatted = customers.map((c) => ({
       id: c.id,
@@ -62,16 +64,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const created = await prisma.customer.create({
-      data: {
-        name: trimmedName,
-        phone: cleanPhone || null,
-        userId: user.id,
-      },
-      include: {
-        entries: true,
-      },
-    });
+    const created = await withRlsContext({ userId: user.id }, (tx) =>
+      tx.customer.create({
+        data: {
+          name: trimmedName,
+          phone: cleanPhone || null,
+          userId: user.id,
+        },
+        include: {
+          entries: true,
+        },
+      })
+    );
 
     return NextResponse.json({
       customer: {

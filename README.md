@@ -28,13 +28,21 @@ Prisma Client is generated during installation and before development and produc
 Copy `.env.example` to `.env` and provide your Supabase PostgreSQL connection string and a secret key:
 
 ```bash
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+DATABASE_URL="postgresql://bahi_app:[ROLE-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
+DIRECT_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
 JWT_SECRET="your_secure_random_string_32_characters_minimum"
 RESEND_API_KEY="re_..."
 RESEND_FROM_EMAIL="Bahi Khata <accounts@your-verified-domain.com>"
 ```
 
-> **Tip for Supabase with Next.js**: You can use either the direct connection (`port 5432`) or the Transaction Pooler connection string (`port 6543` with `?pgbouncer=true`).
+`DATABASE_URL` is the application's restricted runtime connection. Do not use
+the Supabase `postgres` or `service_role` credentials for app traffic;
+administrative roles bypass RLS. `DIRECT_URL` is only for Prisma CLI schema
+operations and must remain server-side.
+
+> **Tip for Supabase with Next.js**: The runtime connection can use the Session
+> Pooler or Transaction Pooler. For the Transaction Pooler, use its connection
+> string with `?pgbouncer=true`; keep `DIRECT_URL` as a direct/admin connection.
 > Verify your sending domain in Resend and configure `RESEND_FROM_EMAIL` with an address on that domain. Password reset codes expire after 10 minutes and can be entered up to five times.
 
 ### 2. Push Database Schema
@@ -53,7 +61,37 @@ When upgrading an existing database, this adds an email field but cannot infer
 shopkeepers' email addresses. Backfill each existing account's verified email
 address before that account next needs to log in; new signups require email.
 
-### 3. Run Development Server
+### 3. Enable Row-Level Security
+
+The app uses its own JWT sessions, not Supabase Auth, so its policies use
+transaction-local `app.user_id` and `app.auth_operation` settings. The server
+sets these for every Prisma transaction; they are cleared automatically when
+the transaction ends.
+
+First, in the Supabase SQL Editor, create a dedicated runtime role with a unique
+strong password (do not reuse your `postgres` password):
+
+```sql
+CREATE ROLE bahi_app LOGIN
+  PASSWORD 'replace-with-a-long-random-secret'
+  NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+GRANT CONNECT ON DATABASE postgres TO bahi_app;
+```
+
+Replace the example password before running the SQL. Then run
+[`supabase/rls.sql`](./supabase/rls.sql) in the SQL Editor as an administrator.
+It enables and forces RLS on users, customers, ledger entries, and password
+reset codes, and grants the runtime role only the table operations the app
+needs. Set `DATABASE_URL` to the `bahi_app` connection string and keep
+`DIRECT_URL` set to the admin connection string. Never expose either URL to the
+browser.
+
+The `bahi_app` role must not own these tables and must not have `BYPASSRLS`.
+The transaction-local identity is trusted server context; this setup is defense
+in depth for requests handled by this app, not a way to let browsers connect
+directly to PostgreSQL using the shared app credentials.
+
+### 4. Run Development Server
 
 ```bash
 pnpm dev

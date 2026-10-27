@@ -21,7 +21,7 @@ export default function CustomerDetail({
 }) {
   const bal = balanceOf(customer);
   const entries = [...customer.entries].sort(
-    (a, b) => +new Date(b.date) - +new Date(a.date)
+    (a, b) => +new Date(b.date) - +new Date(a.date),
   );
 
   return (
@@ -91,11 +91,17 @@ export default function CustomerDetail({
             >
               <div>
                 <div className="text-sm font-semibold">
-                  {e.type === "credit" ? e.item || "Item on credit" : "Cash payment"}
+                  {e.type === "credit"
+                    ? e.item || "Item on credit"
+                    : "Cash payment"}
                 </div>
-                <div className="mt-0.5 text-xs text-inkSoft">{fmtDate(e.date)}</div>
-                {e.note && (
-                  <div className="mt-0.5 text-xs italic text-inkSoft">{e.note}</div>
+                <div className="mt-0.5 text-xs text-inkSoft">
+                  {fmtDate(e.date)}
+                </div>
+                {e.notes && (
+                  <div className="mt-0.5 text-xs italic text-inkSoft">
+                    {e.notes}
+                  </div>
                 )}
                 <div className="mt-1.5 flex gap-2.5">
                   <button
@@ -106,7 +112,7 @@ export default function CustomerDetail({
                   </button>
                   <button
                     className="text-xs font-semibold text-due underline"
-                    onClick={() => onDeleteEntry(e.id)}
+                    onClick={() => onDeleteEntry(e.id as string)}
                   >
                     Delete
                   </button>

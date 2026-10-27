@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { prisma } from "@/app/lib/prisma";
 import { comparePassword, signSessionToken, AUTH_COOKIE_NAME } from "@/app/lib/auth";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function POST(req: Request) {
   try {
@@ -18,9 +18,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    const user = await withRlsContext(
+      { authOperation: "login", authEmail: cleanEmail },
+      (tx) => tx.user.findUnique({ where: { email: cleanEmail } })
+    );
 
     if (!user || !user.email) {
       return NextResponse.json(

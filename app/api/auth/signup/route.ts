@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { prisma } from "@/app/lib/prisma";
 import { hashPassword, signSessionToken, AUTH_COOKIE_NAME } from "@/app/lib/auth";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function POST(req: Request) {
   try {
@@ -41,11 +41,41 @@ export async function POST(req: Request) {
       );
     }
 
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: cleanEmail }, { phone: cleanPhone }],
+    const passwordHash = await hashPassword(cleanPassword);
+    const { existing, user } = await withRlsContext(
+      {
+        authOperation: "signup",
+        authEmail: cleanEmail,
+        authPhone: cleanPhone,
       },
-    });
+      async (tx) => {
+        const existing = await tx.user.findFirst({
+          where: {
+            OR: [{ email: cleanEmail }, { phone: cleanPhone }],
+          },
+        });
+        if (existing) {
+          return { existing, user: null };
+        }
+
+        const user = await tx.user.create({
+          data: {
+            shopName: trimmedShopName,
+            phone: cleanPhone,
+            email: cleanEmail,
+            passwordHash,
+          },
+          select: {
+            id: true,
+            shopName: true,
+            phone: true,
+            email: true,
+            sessionVersion: true,
+          },
+        });
+        return { existing: null, user };
+      }
+    );
 
     if (existing?.email === cleanEmail) {
       return NextResponse.json(
@@ -60,22 +90,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const passwordHash = await hashPassword(cleanPassword);
-    const user = await prisma.user.create({
-      data: {
-        shopName: trimmedShopName,
-        phone: cleanPhone,
-        email: cleanEmail,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        shopName: true,
-        phone: true,
-        email: true,
-        sessionVersion: true,
-      },
-    });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unable to create account. Please try again." },
+        { status: 500 }
+      );
+    }
 
     const token = await signSessionToken({
       userId: user.id,

@@ -8,7 +8,7 @@ export interface AuthUser {
 }
 
 export interface Entry {
-  id: string;
+  id: string | null;
   type: EntryType;
   amount: number;
   date: string; // ISO string or yyyy-mm-dd
@@ -36,7 +36,7 @@ export function uid(): string {
 export function balanceOf(cust: Customer): number {
   return cust.entries.reduce(
     (sum, e) => sum + (e.type === "credit" ? e.amount : -e.amount),
-    0
+    0,
   );
 }
 

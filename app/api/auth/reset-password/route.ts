@@ -3,7 +3,7 @@ import {
   comparePassword,
   hashPassword,
 } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 const invalidCodeMessage = "Invalid or expired reset code";
 
@@ -27,48 +27,55 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    const resetCode = user
-      ? await prisma.passwordResetCode.findUnique({ where: { userId: user.id } })
-      : null;
+    const reset = await withRlsContext(
+      { authOperation: "reset_password", authEmail: email },
+      async (tx) => {
+        const user = await tx.user.findUnique({ where: { email } });
+        const resetCode = user
+          ? await tx.passwordResetCode.findUnique({ where: { userId: user.id } })
+          : null;
 
-    if (
-      !user ||
-      !resetCode ||
-      resetCode.expiresAt.getTime() <= Date.now() ||
-      resetCode.attempts >= 5
-    ) {
-      if (resetCode && resetCode.attempts >= 5) {
-        await prisma.passwordResetCode.delete({ where: { userId: resetCode.userId } });
-      }
-      return NextResponse.json({ error: invalidCodeMessage }, { status: 400 });
-    }
+        if (!user || !resetCode) {
+          return false;
+        }
+        if (
+          resetCode.expiresAt.getTime() <= Date.now() ||
+          resetCode.attempts >= 5
+        ) {
+          await tx.passwordResetCode.delete({ where: { userId: user.id } });
+          return false;
+        }
 
-    const matches = await comparePassword(code, resetCode.codeHash);
-    if (!matches) {
-      const attempts = resetCode.attempts + 1;
-      if (attempts >= 5) {
-        await prisma.passwordResetCode.delete({ where: { userId: user.id } });
-      } else {
-        await prisma.passwordResetCode.update({
-          where: { userId: user.id },
-          data: { attempts },
+        const matches = await comparePassword(code, resetCode.codeHash);
+        if (!matches) {
+          const attempts = resetCode.attempts + 1;
+          if (attempts >= 5) {
+            await tx.passwordResetCode.delete({ where: { userId: user.id } });
+          } else {
+            await tx.passwordResetCode.update({
+              where: { userId: user.id },
+              data: { attempts },
+            });
+          }
+          return false;
+        }
+
+        const passwordHash = await hashPassword(password);
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            sessionVersion: { increment: 1 },
+          },
         });
+        await tx.passwordResetCode.delete({ where: { userId: user.id } });
+        return true;
       }
+    );
+
+    if (!reset) {
       return NextResponse.json({ error: invalidCodeMessage }, { status: 400 });
     }
-
-    const passwordHash = await hashPassword(password);
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: {
-          passwordHash,
-          sessionVersion: { increment: 1 },
-        },
-      }),
-      prisma.passwordResetCode.delete({ where: { userId: user.id } }),
-    ]);
 
     return NextResponse.json({ message: "Password reset successfully. You can now log in." });
   } catch (error) {

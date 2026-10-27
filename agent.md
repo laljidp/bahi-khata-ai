@@ -20,7 +20,7 @@ You are the project agent for Bahi Khata, a Next.js 16 + Prisma + Supabase appli
 - Framework: Next.js 16 with the App Router
 - Frontend: React 19 + TypeScript + Tailwind CSS
 - Data layer: PostgreSQL via Prisma ORM
-- Auth: email-based login, phone number at signup, password/PIN credentials, email OTP password recovery, and JWT session cookies
+- Auth: email-based login, phone number at signup, password/PIN credentials, email OTP password recovery, JWT session cookies, and transaction-scoped PostgreSQL RLS context
 - Package manager: pnpm
 
 ## Working Rules
@@ -30,6 +30,7 @@ You are the project agent for Bahi Khata, a Next.js 16 + Prisma + Supabase appli
 - Preserve multi-tenant boundaries: each shopkeeper should only access their own customers and entries.
 - If the Prisma schema changes, update the schema and regenerate the client before runtime or build validation.
 - Keep API routes, Prisma queries, component state, and TypeScript types in sync.
+- Keep all Prisma access inside `withRlsContext`; use the restricted `bahi_app` runtime role and never expose database credentials to the browser.
 - Do not bypass auth checks, skip validation, or introduce unsafe direct database access patterns.
 - Use existing project conventions and naming patterns instead of introducing new architectural patterns unless required.
 

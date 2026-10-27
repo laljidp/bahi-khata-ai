@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { hashPassword } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 const genericResponse = {
   message: "If an account exists for that email, a reset code has been sent.",
@@ -16,37 +16,47 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
+    const resetRequest = await withRlsContext(
+      { authOperation: "forgot_password", authEmail: email },
+      async (tx) => {
+        const user = await tx.user.findUnique({ where: { email } });
+        if (!user?.email) {
+          return null;
+        }
+
+        const existingCode = await tx.passwordResetCode.findUnique({
+          where: { userId: user.id },
+        });
+        if (
+          existingCode &&
+          Date.now() - existingCode.createdAt.getTime() < 60_000
+        ) {
+          return null;
+        }
+
+        const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+        const codeHash = await hashPassword(code);
+        await tx.passwordResetCode.upsert({
+          where: { userId: user.id },
+          create: {
+            userId: user.id,
+            codeHash,
+            expiresAt: new Date(Date.now() + 10 * 60_000),
+          },
+          update: {
+            codeHash,
+            expiresAt: new Date(Date.now() + 10 * 60_000),
+            attempts: 0,
+            createdAt: new Date(),
+          },
+        });
+
+        return { user, code, codeHash };
+      }
+    );
+    if (!resetRequest) {
       return NextResponse.json(genericResponse);
     }
-
-    const existingCode = await prisma.passwordResetCode.findUnique({
-      where: { userId: user.id },
-    });
-    if (
-      existingCode &&
-      Date.now() - existingCode.createdAt.getTime() < 60_000
-    ) {
-      return NextResponse.json(genericResponse);
-    }
-
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
-    const codeHash = await hashPassword(code);
-    await prisma.passwordResetCode.upsert({
-      where: { userId: user.id },
-      create: {
-        userId: user.id,
-        codeHash,
-        expiresAt: new Date(Date.now() + 10 * 60_000),
-      },
-      update: {
-        codeHash,
-        expiresAt: new Date(Date.now() + 10 * 60_000),
-        attempts: 0,
-        createdAt: new Date(),
-      },
-    });
 
     try {
       const apiKey = process.env.RESEND_API_KEY;
@@ -63,9 +73,9 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           from,
-          to: [email],
+          to: [resetRequest.user.email],
           subject: "Your Bahi Khata password reset code",
-          text: `Your password reset code is ${code}. It expires in 10 minutes. If you did not request this, you can ignore this email.`,
+          text: `Your password reset code is ${resetRequest.code}. It expires in 10 minutes. If you did not request this, you can ignore this email.`,
         }),
       });
 
@@ -74,9 +84,13 @@ export async function POST(req: Request) {
         throw new Error("Password reset email delivery failed");
       }
     } catch (error) {
-      await prisma.passwordResetCode.deleteMany({
-        where: { userId: user.id, codeHash },
-      });
+      await withRlsContext(
+        { authOperation: "forgot_password", authEmail: email },
+        (tx) =>
+          tx.passwordResetCode.deleteMany({
+            where: { userId: resetRequest.user.id, codeHash: resetRequest.codeHash },
+          })
+      );
       throw error;
     }
 

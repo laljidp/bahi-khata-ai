@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth";
-import { prisma } from "@/app/lib/prisma";
+import { withRlsContext } from "@/app/lib/rls";
 
 export async function PATCH(
   req: Request,
@@ -19,26 +19,29 @@ export async function PATCH(
     const trimmedName = typeof name === "string" ? name.trim() : undefined;
     const cleanPhone = typeof phone === "string" ? phone.trim() : undefined;
 
-    const existing = await prisma.customer.findFirst({
-      where: { id: params.id, userId: user.id },
+    const updated = await withRlsContext({ userId: user.id }, async (tx) => {
+      const existing = await tx.customer.findFirst({
+        where: { id: params.id, userId: user.id },
+      });
+      if (!existing) return null;
+
+      return tx.customer.update({
+        where: { id: params.id },
+        data: {
+          ...(trimmedName ? { name: trimmedName } : {}),
+          phone: cleanPhone !== undefined ? (cleanPhone || null) : existing.phone,
+        },
+        include: {
+          entries: {
+            orderBy: { date: "desc" },
+          },
+        },
+      });
     });
 
-    if (!existing) {
+    if (!updated) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
-
-    const updated = await prisma.customer.update({
-      where: { id: params.id },
-      data: {
-        ...(trimmedName ? { name: trimmedName } : {}),
-        phone: cleanPhone !== undefined ? (cleanPhone || null) : existing.phone,
-      },
-      include: {
-        entries: {
-          orderBy: { date: "desc" },
-        },
-      },
-    });
 
     return NextResponse.json({
       customer: {
@@ -74,17 +77,19 @@ export async function DELETE(
   }
 
   try {
-    const existing = await prisma.customer.findFirst({
-      where: { id: params.id, userId: user.id },
+    const deleted = await withRlsContext({ userId: user.id }, async (tx) => {
+      const existing = await tx.customer.findFirst({
+        where: { id: params.id, userId: user.id },
+      });
+      if (!existing) return false;
+
+      await tx.customer.delete({ where: { id: params.id } });
+      return true;
     });
 
-    if (!existing) {
+    if (!deleted) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
-
-    await prisma.customer.delete({
-      where: { id: params.id },
-    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
