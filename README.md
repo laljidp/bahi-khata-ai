@@ -3,7 +3,8 @@
 A mobile-friendly web app for small shopkeepers to manage customers, track items given on credit, and clear dues when customers pay in cash.
 
 ## Features
-- **Multi-Tenant Shopkeeper Accounts** — Sign up & log in with Mobile Number and PIN/Password. Each shopkeeper's customer ledger is strictly isolated.
+- **Multi-Tenant Shopkeeper Accounts** — Sign up with email, mobile number, and PIN/Password; log in with email and PIN/Password. Each shopkeeper's customer ledger is strictly isolated.
+- **Password Recovery** — Reset a password using a time-limited OTP sent to the registered email address.
 - **Dashboard** — outstanding credit, customer count, customers with dues, settled count, recent activity
 - **Customers** — search, add, edit, delete
 - **Customer ledger** — add/edit/delete credit entries, record cash payments, running balance
@@ -13,7 +14,8 @@ A mobile-friendly web app for small shopkeepers to manage customers, track items
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router + Turbopack) & React 19
 - **Database & ORM**: PostgreSQL (Supabase) + Prisma ORM 7
-- **Authentication**: Phone Number + PIN/Password, Bcrypt password hashing, and JWT session cookies (`jose`)
+- **Authentication**: Email login, phone number at signup, Bcrypt password hashing, and JWT session cookies (`jose`)
+- **Email**: Resend API for password reset OTP delivery
 - **Styling**: Tailwind CSS with custom Indian ledger color theme
 - **Package Manager**: pnpm
 
@@ -28,9 +30,12 @@ Copy `.env.example` to `.env` and provide your Supabase PostgreSQL connection st
 ```bash
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
 JWT_SECRET="your_secure_random_string_32_characters_minimum"
+RESEND_API_KEY="re_..."
+RESEND_FROM_EMAIL="Bahi Khata <accounts@your-verified-domain.com>"
 ```
 
 > **Tip for Supabase with Next.js**: You can use either the direct connection (`port 5432`) or the Transaction Pooler connection string (`port 6543` with `?pgbouncer=true`).
+> Verify your sending domain in Resend and configure `RESEND_FROM_EMAIL` with an address on that domain. Password reset codes expire after 10 minutes and can be entered up to five times.
 
 ### 2. Push Database Schema
 Push the Prisma schema to your Supabase PostgreSQL instance:
@@ -43,6 +48,10 @@ pnpm prisma generate
 The Prisma CLI loads `.env` through `prisma.config.ts`. Prisma 7 does not
 automatically regenerate the client after schema pushes; run `pnpm prisma generate`
 after schema changes.
+
+When upgrading an existing database, this adds an email field but cannot infer
+shopkeepers' email addresses. Backfill each existing account's verified email
+address before that account next needs to log in; new signups require email.
 
 ### 3. Run Development Server
 
@@ -73,7 +82,9 @@ app/
   api/
     auth/
       signup/route.ts            Shopkeeper registration
-      login/route.ts             Shopkeeper login
+      login/route.ts             Email-based shopkeeper login
+      forgot-password/route.ts   Send a password reset OTP by email
+      reset-password/route.ts    Verify the OTP and change the password
       logout/route.ts            Shopkeeper session clearance
       me/route.ts                Current authenticated shopkeeper profile
     customers/

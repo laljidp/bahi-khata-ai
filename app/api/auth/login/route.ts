@@ -6,25 +6,25 @@ import { comparePassword, signSessionToken, AUTH_COOKIE_NAME } from "@/app/lib/a
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { phone, password } = body;
+    const { email, password } = body;
 
-    const cleanPhone = typeof phone === "string" ? phone.replace(/[\s-]/g, "").trim() : "";
+    const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
     const cleanPassword = typeof password === "string" ? password.trim() : "";
 
-    if (!cleanPhone || !cleanPassword) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || !cleanPassword) {
       return NextResponse.json(
-        { error: "Phone number and password are required" },
+        { error: "A valid email address and password are required" },
         { status: 400 }
       );
     }
 
     const user = await prisma.user.findUnique({
-      where: { phone: cleanPhone },
+      where: { email: cleanEmail },
     });
 
-    if (!user) {
+    if (!user || !user.email) {
       return NextResponse.json(
-        { error: "No account found with this phone number" },
+        { error: "Invalid email or password" },
         { status: 401 }
       );
     }
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       userId: user.id,
       phone: user.phone,
       shopName: user.shopName,
+      sessionVersion: user.sessionVersion,
     });
 
     const cookieStore = await cookies();
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
         id: user.id,
         shopName: user.shopName,
         phone: user.phone,
+        email: user.email,
       },
     });
   } catch (error) {

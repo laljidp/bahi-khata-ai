@@ -6,15 +6,23 @@ import { hashPassword, signSessionToken, AUTH_COOKIE_NAME } from "@/app/lib/auth
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { shopName, phone, password } = body;
+    const { shopName, phone, email, password } = body;
 
     const trimmedShopName = typeof shopName === "string" ? shopName.trim() : "";
     const cleanPhone = typeof phone === "string" ? phone.replace(/[\s-]/g, "").trim() : "";
+    const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
     const cleanPassword = typeof password === "string" ? password.trim() : "";
 
     if (!trimmedShopName) {
       return NextResponse.json(
         { error: "Shop name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address" },
         { status: 400 }
       );
     }
@@ -33,12 +41,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if phone already registered
-    const existing = await prisma.user.findUnique({
-      where: { phone: cleanPhone },
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: cleanEmail }, { phone: cleanPhone }],
+      },
     });
 
-    if (existing) {
+    if (existing?.email === cleanEmail) {
+      return NextResponse.json(
+        { error: "An account with this email address is already registered. Please log in." },
+        { status: 409 }
+      );
+    }
+    if (existing?.phone === cleanPhone) {
       return NextResponse.json(
         { error: "A shop with this phone number is already registered. Please log in." },
         { status: 409 }
@@ -50,12 +65,15 @@ export async function POST(req: Request) {
       data: {
         shopName: trimmedShopName,
         phone: cleanPhone,
+        email: cleanEmail,
         passwordHash,
       },
       select: {
         id: true,
         shopName: true,
         phone: true,
+        email: true,
+        sessionVersion: true,
       },
     });
 
@@ -63,6 +81,7 @@ export async function POST(req: Request) {
       userId: user.id,
       phone: user.phone,
       shopName: user.shopName,
+      sessionVersion: user.sessionVersion,
     });
 
     const cookieStore = await cookies();

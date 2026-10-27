@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   shopName: string;
   phone: string;
+  email: string | null;
 }
 
 export interface Entry {

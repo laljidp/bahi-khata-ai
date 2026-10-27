@@ -23,6 +23,7 @@ export interface SessionPayload {
   userId: string;
   phone: string;
   shopName: string;
+  sessionVersion: number;
 }
 
 export async function signSessionToken(payload: SessionPayload): Promise<string> {
@@ -39,10 +40,13 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
     if (!payload.userId || !payload.phone || !payload.shopName) {
       return null;
     }
+    const sessionVersion =
+      typeof payload.sessionVersion === "number" ? payload.sessionVersion : 0;
     return {
       userId: payload.userId as string,
       phone: payload.phone as string,
       shopName: payload.shopName as string,
+      sessionVersion,
     };
   } catch {
     return null;
@@ -64,10 +68,12 @@ export async function getCurrentUser() {
         id: true,
         shopName: true,
         phone: true,
+        email: true,
+        sessionVersion: true,
       },
     });
 
-    return user;
+    return user?.sessionVersion === session.sessionVersion ? user : null;
   } catch {
     return null;
   }

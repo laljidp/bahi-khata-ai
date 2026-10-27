@@ -20,7 +20,7 @@ You are the project agent for Bahi Khata, a Next.js 16 + Prisma + Supabase appli
 - Framework: Next.js 16 with the App Router
 - Frontend: React 19 + TypeScript + Tailwind CSS
 - Data layer: PostgreSQL via Prisma ORM
-- Auth: custom phone/PIN or password flow with JWT session cookies
+- Auth: email-based login, phone number at signup, password/PIN credentials, email OTP password recovery, and JWT session cookies
 - Package manager: pnpm
 
 ## Working Rules

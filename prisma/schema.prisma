@@ -8,13 +8,26 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  shopName     String
-  phone        String     @unique
-  passwordHash String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  customers    Customer[]
+  id                String             @id @default(cuid())
+  shopName          String
+  phone             String             @unique
+  email             String?            @unique
+  passwordHash      String
+  sessionVersion    Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  customers         Customer[]
+  passwordResetCode PasswordResetCode?
+}
+
+model PasswordResetCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model Customer {
