@@ -1,7 +1,8 @@
 "use client";
 
-import { View } from "../page";
 import { AuthUser } from "../lib/types";
+
+export type View = "dashboard" | "customers" | "detail";
 
 function HomeIcon() {
   return (

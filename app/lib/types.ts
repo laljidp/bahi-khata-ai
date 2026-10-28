@@ -29,6 +29,21 @@ export interface DB {
   customers: Customer[];
 }
 
+export interface DashboardData {
+  outstanding: number;
+  customerCount: number;
+  customersWithDues: number;
+  recent: Array<{
+    id: string;
+    customerId: string;
+    customerName: string;
+    amount: number;
+    type: EntryType;
+    date: string;
+    notes?: string;
+  }>;
+}
+
 export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }

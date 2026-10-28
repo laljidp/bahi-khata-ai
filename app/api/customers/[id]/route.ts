@@ -2,6 +2,47 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth";
 import { withRlsContext } from "@/app/lib/rls";
 
+export async function GET(
+  _req: Request,
+  props: { params: Promise<{ id: string }> }
+) {
+  const { id } = await props.params;
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const customer = await withRlsContext({ userId: user.id }, (tx) =>
+      tx.customer.findFirst({
+        where: { id, userId: user.id },
+        include: { entries: { orderBy: { date: "desc" } } },
+      })
+    );
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone || undefined,
+        entries: customer.entries.map((entry) => ({
+          id: entry.id,
+          amount: entry.amount,
+          type: entry.type as "credit" | "payment",
+          date: entry.date.toISOString(),
+          notes: entry.notes || undefined,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("Fetch customer error:", error);
+    return NextResponse.json({ error: "Failed to fetch customer" }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   req: Request,
   props: { params: Promise<{ id: string }> }

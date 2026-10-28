@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto_Slab, Work_Sans } from "next/font/google";
 import "./globals.css";
+import AppFrame from "./components/AppFrame";
 
 const slab = Roboto_Slab({
   subsets: ["latin"],
@@ -33,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${slab.variable} ${work.variable} font-sans`}>
-        {children}
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );

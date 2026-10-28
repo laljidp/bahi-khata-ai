@@ -7,7 +7,6 @@ export function useDB() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [db, setDB] = useState<DB>({ customers: [] });
-  const [loadingData, setLoadingData] = useState(false);
 
   // Check current session on mount
   useEffect(() => {
@@ -34,31 +33,6 @@ export function useDB() {
       ignore = true;
     };
   }, []);
-
-  // Fetch customers when user is logged in
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    let ignore = false;
-    async function fetchCustomers() {
-      try {
-        const res = await fetch("/api/customers");
-        if (res.ok && !ignore) {
-          const data = await res.json();
-          setDB({ customers: data.customers || [] });
-        }
-      } catch (err) {
-        console.error("Failed to load customers from server:", err);
-      } finally {
-        if (!ignore) setLoadingData(false);
-      }
-    }
-    fetchCustomers();
-    return () => {
-      ignore = true;
-    };
-  }, [user]);
 
   // Save customer (create or update)
   async function saveCustomer(c: Customer): Promise<Customer> {
@@ -222,7 +196,6 @@ export function useDB() {
     setUser,
     authLoading,
     ready: !authLoading,
-    loadingData,
     db,
     setDB,
     saveCustomer,
