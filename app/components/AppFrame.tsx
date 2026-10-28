@@ -32,7 +32,7 @@ export function useAppFrame() {
 }
 
 function LoadingState() {
-  return <div className="flex min-h-64 items-center justify-center"><div className="text-center"><div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-amber border-t-transparent" /><p className="mt-3 text-sm text-inkSoft">Loading...</p></div></div>;
+  return <div className="flex min-h-64 items-center justify-center"><div className="text-center"><div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-brand border-t-transparent" /><p className="mt-3 text-sm text-ink-muted">Loading...</p></div></div>;
 }
 
 export default function AppFrame({ children }: { children: ReactNode }) {
@@ -120,7 +120,7 @@ export default function AppFrame({ children }: { children: ReactNode }) {
     },
   }), [db.customers, dashboard, loading, loadError, currentCustomer, router, customerId, persistEntry, persistDeleteEntry, deleteCustomer]);
 
-  if (authLoading) return <div className="flex min-h-[100dvh] items-center justify-center bg-paper"><div className="text-center"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-amber border-t-transparent" /><div className="mt-3 font-slab text-sm font-semibold text-ink">Loading Bahi Khata...</div></div></div>;
+  if (authLoading) return <div className="flex min-h-[100dvh] items-center justify-center bg-paper"><div className="text-center"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" /><div className="mt-3 font-slab text-sm font-semibold text-ink">Loading Bahi Khata...</div></div></div>;
   if (!user) return <AuthModal onSuccess={(loggedUser) => { setUser(loggedUser); flash(`Welcome, ${loggedUser.shopName}`); }} />;
 
   const navigate = (next: View) => router.push(next === "customers" ? "/customers" : "/");
@@ -139,7 +139,7 @@ export default function AppFrame({ children }: { children: ReactNode }) {
         <MobileHeader user={user} onLogout={logout} />
         <Topbar view={view} user={user} onLogout={logout} />
         <main className="mx-auto w-full max-w-[920px] flex-1 px-4 pb-[90px] pt-4 sm:px-8 sm:pb-8 sm:pt-7">
-          {loading || loadedRouteKey !== routeKey ? <LoadingState /> : loadError ? <div className="py-10 text-center text-sm text-due">{loadError}</div> : children}
+          {loading || loadedRouteKey !== routeKey ? <LoadingState /> : loadError ? <div className="py-10 text-center text-sm text-ledger-due">{loadError}</div> : <div key={routeKey} className="route-content">{children}</div>}
         </main>
       </div>
       <Fab show={view !== "detail"} onClick={context.openAddCustomer} />

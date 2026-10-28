@@ -41,11 +41,11 @@ export function Sidebar({
     { key: "customers", label: "Customers" },
   ];
   return (
-    <aside className="hidden w-[230px] flex-shrink-0 flex-col justify-between border-r border-paperLine bg-card px-4 py-7 sm:flex">
+    <aside className="hidden w-[230px] flex-shrink-0 flex-col justify-between border-r border-paper-line bg-paper-card px-4 py-7 sm:flex">
       <div>
         <div className="ml-1.5 font-slab text-xl font-bold text-ink">
           Bahi Khata
-          <small className="mt-0.5 block font-sans text-xs font-normal text-inkSoft">
+          <small className="mt-0.5 block font-sans text-xs font-normal text-ink-muted">
             credit ledger
           </small>
         </div>
@@ -57,8 +57,8 @@ export function Sidebar({
               onClick={() => setView(it.key)}
               className={`cursor-pointer rounded-md border-l-[3px] px-3 py-2.5 text-sm font-medium transition-colors ${
                 view === it.key || (view === "detail" && it.key === "customers")
-                  ? "border-due bg-dueSoft text-ink"
-                  : "border-transparent text-inkSoft hover:bg-[#F1EADA]"
+                  ? "border-ledger-due bg-ledger-due-soft text-ink"
+                  : "border-transparent text-ink-muted hover:bg-paper-hover"
               }`}
             >
               {it.label}
@@ -67,7 +67,7 @@ export function Sidebar({
         </nav>
 
         <button
-          className="mt-6 w-full rounded-md bg-amber py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-amberDark"
+          className="button-primary mt-6 w-full shadow-xs"
           onClick={onAddCustomer}
         >
           + New customer
@@ -75,17 +75,17 @@ export function Sidebar({
       </div>
 
       {user && (
-        <div className="rounded-xl border border-paperLine/70 bg-paper/60 p-3">
+        <div className="rounded-xl border border-paper-line/70 bg-paper/60 p-3">
           <div className="truncate font-semibold text-xs text-ink">
             {user.shopName}
           </div>
-          <div className="mt-0.5 text-[0.72rem] text-inkSoft">
+          <div className="mt-0.5 text-[0.72rem] text-ink-muted">
             +91 {user.phone}
           </div>
           {onLogout && (
             <button
               onClick={onLogout}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-paperLine bg-card py-1.5 text-xs font-medium text-due transition hover:bg-dueSoft/50"
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-paper-line bg-paper-card py-1.5 text-xs font-medium text-ledger-due transition hover:bg-ledger-due-soft/50"
             >
               Log out
             </button>
@@ -104,13 +104,13 @@ export function MobileHeader({
   onLogout?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-paperLine px-[18px] py-3.5 sm:hidden">
+    <div className="flex items-center justify-between border-b border-paper-line px-[18px] py-3.5 sm:hidden">
       <div>
         <div className="font-slab text-lg font-bold text-ink leading-tight">
           Bahi Khata
         </div>
         {user && (
-          <div className="text-[0.7rem] font-medium text-inkSoft truncate max-w-[200px]">
+          <div className="text-[0.7rem] font-medium text-ink-muted truncate max-w-[200px]">
             {user.shopName}
           </div>
         )}
@@ -118,7 +118,7 @@ export function MobileHeader({
       {user && onLogout && (
         <button
           onClick={onLogout}
-          className="rounded-md border border-paperLine bg-card px-2.5 py-1 text-xs font-semibold text-due transition hover:bg-dueSoft/50"
+          className="rounded-md border border-paper-line bg-paper-card px-2.5 py-1 text-xs font-semibold text-ledger-due transition hover:bg-ledger-due-soft/50"
         >
           Logout
         </button>
@@ -138,7 +138,7 @@ export function Topbar({
 }) {
   const title = view === "dashboard" ? "Dashboard" : view === "customers" ? "Customers" : "Customer";
   return (
-    <div className="hidden items-center justify-between border-b border-paperLine px-8 py-4 sm:flex">
+    <div className="hidden items-center justify-between border-b border-paper-line px-8 py-4 sm:flex">
       <h2 className="m-0 text-lg font-semibold text-ink">{title}</h2>
       {user && (
         <div className="flex items-center gap-3">
@@ -146,14 +146,14 @@ export function Topbar({
             <span className="block text-xs font-semibold text-ink">
               {user.shopName}
             </span>
-            <span className="block text-[0.7rem] text-inkSoft">
+            <span className="block text-[0.7rem] text-ink-muted">
               +91 {user.phone}
             </span>
           </div>
           {onLogout && (
             <button
               onClick={onLogout}
-              className="rounded-md border border-paperLine bg-card px-3 py-1.5 text-xs font-semibold text-due transition hover:bg-dueSoft/50"
+              className="rounded-md border border-paper-line bg-paper-card px-3 py-1.5 text-xs font-semibold text-ledger-due transition hover:bg-ledger-due-soft/50"
             >
               Log out
             </button>
@@ -170,15 +170,15 @@ export function BottomNav({ view, setView }: { view: View; setView: (v: View) =>
     { key: "customers", label: "Customers", icon: <UsersIcon /> },
   ];
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex border-t border-paperLine bg-card pb-[env(safe-area-inset-bottom)] sm:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex border-t border-paper-line bg-paper-card pb-[env(safe-area-inset-bottom)] sm:hidden">
       {items.map((it) => (
         <button
           key={it.key}
           onClick={() => setView(it.key)}
           className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 pb-2 text-[0.68rem] font-semibold transition-colors ${
             view === it.key || (view === "detail" && it.key === "customers")
-              ? "text-due"
-              : "text-inkSoft"
+              ? "text-ledger-due"
+              : "text-ink-muted"
           }`}
         >
           {it.icon}
@@ -194,7 +194,7 @@ export function Fab({ show, onClick }: { show: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-[calc(78px+env(safe-area-inset-bottom))] right-[18px] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-amber text-2xl text-white shadow-[0_4px_14px_rgba(199,125,38,0.4)] transition hover:bg-amberDark sm:hidden"
+      className="fixed bottom-[calc(78px+env(safe-area-inset-bottom))] right-[18px] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-brand text-2xl text-white shadow-[0_4px_14px_rgba(199,125,38,0.4)] transition hover:bg-brand-dark sm:hidden"
     >
       +
     </button>

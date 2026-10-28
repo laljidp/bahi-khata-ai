@@ -4,9 +4,8 @@ import { useState } from "react";
 import Sheet from "./Sheet";
 import { Customer, uid } from "../lib/types";
 
-const inputCls =
-  "w-full rounded-md border border-paperLine bg-white px-3.5 py-2.5 font-sans text-sm text-ink";
-const labelCls = "mb-1.5 block text-xs font-semibold text-inkSoft";
+const inputCls = "app-input";
+const labelCls = "app-label";
 
 export default function CustomerSheet({
   open,
@@ -82,13 +81,13 @@ export default function CustomerSheet({
       </div>
       <div className="mt-4 flex gap-2.5">
         <button
-          className="flex-1 rounded-md border border-paperLine py-3 text-sm font-semibold hover:bg-[#F1EADA]"
+          className="button-secondary flex-1"
           onClick={onClose}
         >
           Cancel
         </button>
         <button
-          className="flex-1 rounded-md bg-amber py-3 text-sm font-semibold text-white hover:bg-amberDark"
+          className="button-primary flex-1"
           onClick={handleSave}
         >
           {existing ? "Save changes" : "Save customer"}
@@ -96,7 +95,7 @@ export default function CustomerSheet({
       </div>
       {existing && onDelete && (
         <button
-          className="mt-4 block w-full text-center text-sm font-semibold text-due underline"
+          className="button-danger mt-4 block w-full text-center"
           onClick={onDelete}
         >
           Delete customer

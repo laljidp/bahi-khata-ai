@@ -27,33 +27,30 @@ export default function CustomerDetail({
   return (
     <div>
       <button
-        className="mb-3.5 flex items-center gap-1.5 text-sm font-semibold text-inkSoft"
+        className="mb-3.5 flex items-center gap-1.5 text-sm font-semibold text-ink-muted"
         onClick={onBack}
       >
         ← All customers
       </button>
 
-      <div className="mb-4 rounded-lg border border-paperLine bg-card p-4.5 p-[18px]">
+      <div className="app-card mb-4 p-4.5 p-[18px]">
         <div className="font-slab text-xl font-bold">{customer.name}</div>
-        <div className="mt-0.5 text-sm text-inkSoft">
+        <div className="mt-0.5 text-sm text-ink-muted">
           {customer.phone || "No phone number"}
         </div>
         <div className="mt-3.5 flex items-end justify-between">
           <div>
-            <div className="text-[0.72rem] font-semibold uppercase text-inkSoft">
+            <div className="text-[0.72rem] font-semibold uppercase text-ink-muted">
               {bal > 0 ? "Amount due" : bal < 0 ? "Advance paid" : "Settled"}
             </div>
             <div
-              className="font-slab text-3xl font-bold"
-              style={{
-                color: bal > 0 ? "#8B2E2E" : bal < 0 ? "#3F6B4F" : "#2B2318",
-              }}
+              className={`font-slab text-3xl font-bold ${bal > 0 ? "text-ledger-due" : bal < 0 ? "text-ledger-paid" : "text-ink"}`}
             >
               {fmt(Math.abs(bal))}
             </div>
           </div>
           <button
-            className="rounded-md border border-paperLine px-3.5 py-2 text-xs font-semibold hover:bg-[#F1EADA]"
+            className="button-secondary px-3.5 py-2 text-xs"
             onClick={onEditCustomer}
           >
             Edit
@@ -63,14 +60,14 @@ export default function CustomerDetail({
 
       <div className="mb-4.5 mb-[18px] flex gap-2.5">
         <button
-          className="flex-1 rounded-md bg-due py-3 text-sm font-semibold text-white"
+          className="flex-1 rounded-md bg-ledger-due py-3 text-sm font-semibold text-white"
           onClick={onAddCredit}
         >
           + Add credit
         </button>
         <button
           className={`flex-1 rounded-md py-3 text-sm font-semibold text-white ${
-            bal <= 0 ? "cursor-not-allowed bg-paid/45" : "bg-paid"
+            bal <= 0 ? "cursor-not-allowed bg-ledger-paid/45" : "bg-ledger-paid"
           }`}
           disabled={bal <= 0}
           onClick={onAddPayment}
@@ -79,15 +76,15 @@ export default function CustomerDetail({
         </button>
       </div>
 
-      <div className="mb-2.5 text-sm font-semibold text-inkSoft">
+      <div className="mb-2.5 text-sm font-semibold text-ink-muted">
         Ledger history
       </div>
-      <div className="overflow-hidden rounded-lg border border-paperLine bg-card">
+      <div className="app-card overflow-hidden">
         {entries.length ? (
           entries.map((e) => (
             <div
               key={e.id}
-              className="flex justify-between gap-2.5 border-b border-paperLine px-4 py-3.5 last:border-b-0"
+              className="ledger-row items-start gap-2.5 hover:bg-transparent"
             >
               <div>
                 <div className="text-sm font-semibold">
@@ -95,23 +92,23 @@ export default function CustomerDetail({
                     ? e.item || "Item on credit"
                     : "Cash payment"}
                 </div>
-                <div className="mt-0.5 text-xs text-inkSoft">
+                <div className="mt-0.5 text-xs text-ink-muted">
                   {fmtDate(e.date)}
                 </div>
                 {e.notes && (
-                  <div className="mt-0.5 text-xs italic text-inkSoft">
+                  <div className="mt-0.5 text-xs italic text-ink-muted">
                     {e.notes}
                   </div>
                 )}
                 <div className="mt-1.5 flex gap-2.5">
                   <button
-                    className="text-xs font-semibold text-inkSoft underline"
+                    className="text-xs font-semibold text-ink-muted underline"
                     onClick={() => onEditEntry(e)}
                   >
                     Edit
                   </button>
                   <button
-                    className="text-xs font-semibold text-due underline"
+                    className="text-xs font-semibold text-ledger-due underline"
                     onClick={() => onDeleteEntry(e.id as string)}
                   >
                     Delete
@@ -120,7 +117,7 @@ export default function CustomerDetail({
               </div>
               <div
                 className={`whitespace-nowrap font-slab font-bold ${
-                  e.type === "credit" ? "text-due" : "text-paid"
+                  e.type === "credit" ? "text-ledger-due" : "text-ledger-paid"
                 }`}
               >
                 {e.type === "credit" ? "+" : "−"}
@@ -129,7 +126,7 @@ export default function CustomerDetail({
             </div>
           ))
         ) : (
-          <div className="px-5 py-9 text-center text-sm text-inkSoft">
+          <div className="px-5 py-9 text-center text-sm text-ink-muted">
             No entries yet.
           </div>
         )}

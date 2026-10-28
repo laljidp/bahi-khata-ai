@@ -6,13 +6,13 @@ import AppFrame from "./components/AppFrame";
 const slab = Roboto_Slab({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
-  variable: "--font-slab",
+  variable: "--font-roboto-slab",
 });
 
 const work = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-work",
+  variable: "--font-work-sans",
 });
 
 export const metadata: Metadata = {

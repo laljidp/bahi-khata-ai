@@ -23,34 +23,33 @@ export default function CustomersList({
     <div>
       <div className="mb-3.5">
         <input
-          className="w-full rounded-md border border-paperLine bg-card px-3.5 py-2.5 text-sm text-ink"
+          className="app-input bg-paper-card"
           placeholder="Search by name or phone"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
-      <div className="overflow-hidden rounded-lg border border-paperLine bg-card">
+      <div className="app-card overflow-hidden">
         {list.length ? (
           list.map((c) => {
             const bal = balanceOf(c);
             return (
               <div
                 key={c.id}
-                className="flex cursor-pointer items-center justify-between border-b border-paperLine px-4 py-3.5 last:border-b-0 hover:bg-[#F4EEDD]"
+                className="ledger-row w-full cursor-pointer text-left"
                 onClick={() => onOpen(c.id)}
               >
                 <div>
                   <div className="text-sm font-semibold">{c.name}</div>
-                  <div className="mt-0.5 text-xs text-inkSoft">
+                  <div className="mt-0.5 text-xs text-ink-muted">
                     {c.phone || "No phone"}
                   </div>
                 </div>
                 <div
-                  className="text-right font-slab text-sm font-bold"
-                  style={{ color: bal > 0 ? "#8B2E2E" : "#3F6B4F" }}
+                  className={`text-right font-slab text-sm font-bold ${bal > 0 ? "text-ledger-due" : "text-ledger-paid"}`}
                 >
                   {fmt(Math.abs(bal))}
-                  <span className="block font-sans text-[0.68rem] font-medium text-inkSoft">
+                  <span className="block font-sans text-[0.68rem] font-medium text-ink-muted">
                     {bal > 0 ? "due" : bal < 0 ? "advance" : "settled"}
                   </span>
                 </div>
@@ -58,7 +57,7 @@ export default function CustomersList({
             );
           })
         ) : (
-          <div className="px-5 py-9 text-center text-sm text-inkSoft">
+          <div className="px-5 py-9 text-center text-sm text-ink-muted">
             {customers.length
               ? "No customers match your search."
               : "No customers yet. Tap + to add one."}

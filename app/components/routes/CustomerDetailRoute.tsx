@@ -9,7 +9,7 @@ export default function CustomerDetailRoute() {
     useAppFrame();
   if (!currentCustomer)
     return (
-      <div className="py-10 text-center text-sm text-inkSoft">
+      <div className="py-10 text-center text-sm text-ink-muted">
         Loading customer...
       </div>
     );

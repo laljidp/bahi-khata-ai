@@ -1,11 +1,72 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme inline {
+  --color-paper: #f7f2e7;
+  --color-paper-card: #fffdf8;
+  --color-paper-line: #ded0ac;
+  --color-paper-hover: #f1eada;
+  --color-paper-raised: #f4eedd;
+  --color-ink: #2b2318;
+  --color-ink-muted: #6b6050;
+  --color-brand: #c77d26;
+  --color-brand-dark: #a5641b;
+  --color-brand-soft: #f5e8d7;
+  --color-ledger-due: #8b2e2e;
+  --color-ledger-due-soft: #f3e1dd;
+  --color-ledger-paid: #3f6b4f;
+  --color-ledger-paid-soft: #e1ebe1;
+  --font-slab: var(--font-roboto-slab), serif;
+  --font-sans: var(--font-work-sans), sans-serif;
+
+  --animate-fade-in: fade-in 180ms ease-out both;
+  --animate-modal-in: modal-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-sheet-in: sheet-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-route-in: route-in 180ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes route-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
 
 html,
 body {
-  background: #f7f2e7;
-  color: #2b2318;
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
 ::-webkit-scrollbar {
@@ -15,6 +76,54 @@ body {
 
 input:focus,
 textarea:focus {
-  outline: 2px solid #c77d26;
+  outline: 2px solid var(--color-brand);
   outline-offset: 1px;
+}
+
+@layer components {
+  .app-card {
+    @apply rounded-lg border border-paper-line bg-paper-card;
+  }
+
+  .app-input {
+    @apply w-full rounded-md border border-paper-line bg-white px-3.5 py-2.5 font-sans text-sm text-ink outline-none transition focus:border-brand focus:ring-1 focus:ring-brand;
+  }
+
+  .app-label {
+    @apply mb-1.5 block text-xs font-semibold text-ink-muted;
+  }
+
+  .button-primary {
+    @apply rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2;
+  }
+
+  .button-secondary {
+    @apply rounded-md border border-paper-line px-4 py-3 text-sm font-semibold text-ink transition-colors hover:bg-paper-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2;
+  }
+
+  .button-danger {
+    @apply text-sm font-semibold text-ledger-due underline decoration-ledger-due/40 underline-offset-2 hover:decoration-ledger-due;
+  }
+
+  .ledger-row {
+    @apply flex items-center justify-between border-b border-paper-line px-4 py-3.5 last:border-b-0 transition-colors hover:bg-paper-raised;
+  }
+
+  .modal-backdrop {
+    @apply animate-fade-in bg-ink/45;
+  }
+
+  .route-content {
+    @apply animate-route-in;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

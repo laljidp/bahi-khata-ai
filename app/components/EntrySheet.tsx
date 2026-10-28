@@ -4,9 +4,8 @@ import { useState } from "react";
 import Sheet from "./Sheet";
 import { Entry, EntryType } from "../lib/types";
 
-const inputCls =
-  "w-full rounded-md border border-paperLine bg-white px-3.5 py-2.5 font-sans text-sm text-ink";
-const labelCls = "mb-1.5 block text-xs font-semibold text-inkSoft";
+const inputCls = "app-input";
+const labelCls = "app-label";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -106,14 +105,14 @@ export default function EntrySheet({
       </div>
       <div className="mt-4 flex gap-2.5">
         <button
-          className="flex-1 rounded-md border border-paperLine py-3 text-sm font-semibold hover:bg-[#F1EADA]"
+          className="button-secondary flex-1"
           onClick={onClose}
         >
           Cancel
         </button>
         <button
           className={`flex-1 rounded-md py-3 text-sm font-semibold text-white ${
-            isCredit ? "bg-due" : "bg-paid"
+            isCredit ? "bg-ledger-due" : "bg-ledger-paid"
           }`}
           onClick={handleSave}
         >
