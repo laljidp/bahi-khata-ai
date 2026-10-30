@@ -40,7 +40,7 @@ export default function AppFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const customerMatch = pathname.match(/^\/customers\/([^/]+)\/?$/);
   const customerId = customerMatch ? decodeURIComponent(customerMatch[1]) : undefined;
-  const view: View = customerId ? "detail" : pathname.startsWith("/customers") ? "customers" : "dashboard";
+  const view: View = customerId ? "detail" : pathname.startsWith("/customers") ? "customers" : pathname.startsWith("/activity") ? "activity" : "dashboard";
   const routeKey = customerId ? `customer:${customerId}` : view;
   const { user, setUser, authLoading, db, setDB, saveCustomer, deleteCustomer, saveEntry: persistEntry, deleteEntry: persistDeleteEntry, logout } = useDB();
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -63,6 +63,11 @@ export default function AppFrame({ children }: { children: ReactNode }) {
     async function loadRouteData() {
       setLoading(true);
       setLoadError(null);
+      if (view === "activity") {
+        setLoadedRouteKey(routeKey);
+        setLoading(false);
+        return;
+      }
       const endpoint = view === "dashboard" ? "/api/dashboard" : customerId ? `/api/customers/${encodeURIComponent(customerId)}` : "/api/customers";
       try {
         const response = await fetch(endpoint, { signal: controller.signal });
@@ -123,7 +128,7 @@ export default function AppFrame({ children }: { children: ReactNode }) {
   if (authLoading) return <div className="flex min-h-[100dvh] items-center justify-center bg-paper"><div className="text-center"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" /><div className="mt-3 font-slab text-sm font-semibold text-ink">Loading Bahi Khata...</div></div></div>;
   if (!user) return <AuthModal onSuccess={(loggedUser) => { setUser(loggedUser); flash(`Welcome, ${loggedUser.shopName}`); }} />;
 
-  const navigate = (next: View) => router.push(next === "customers" ? "/customers" : "/");
+  const navigate = (next: View) => router.push(next === "customers" ? "/customers" : next === "activity" ? "/activity" : "/");
   const handleSaveCustomer = async (customer: Customer) => {
     const isNew = !editingCustomer;
     setCustomerSheetOpen(false);

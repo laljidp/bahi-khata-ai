@@ -2,7 +2,7 @@
 
 import { AuthUser } from "../lib/types";
 
-export type View = "dashboard" | "customers" | "detail";
+export type View = "dashboard" | "customers" | "activity" | "detail";
 
 function HomeIcon() {
   return (
@@ -39,6 +39,7 @@ export function Sidebar({
   const items: { key: View; label: string }[] = [
     { key: "dashboard", label: "Dashboard" },
     { key: "customers", label: "Customers" },
+    { key: "activity", label: "Recent activity" },
   ];
   return (
     <aside className="hidden w-[230px] flex-shrink-0 flex-col justify-between border-r border-paper-line bg-paper-card px-4 py-7 sm:flex">
@@ -136,7 +137,7 @@ export function Topbar({
   user?: AuthUser | null;
   onLogout?: () => void;
 }) {
-  const title = view === "dashboard" ? "Dashboard" : view === "customers" ? "Customers" : "Customer";
+  const title = view === "dashboard" ? "Dashboard" : view === "customers" ? "Customers" : view === "activity" ? "Recent activity" : "Customer";
   return (
     <div className="hidden items-center justify-between border-b border-paper-line px-8 py-4 sm:flex">
       <h2 className="m-0 text-lg font-semibold text-ink">{title}</h2>
@@ -168,6 +169,7 @@ export function BottomNav({ view, setView }: { view: View; setView: (v: View) =>
   const items: { key: View; label: string; icon: React.ReactNode }[] = [
     { key: "dashboard", label: "Dashboard", icon: <HomeIcon /> },
     { key: "customers", label: "Customers", icon: <UsersIcon /> },
+    { key: "activity", label: "Activity", icon: <ActivityIcon /> },
   ];
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex border-t border-paper-line bg-paper-card pb-[env(safe-area-inset-bottom)] sm:hidden">
@@ -187,6 +189,10 @@ export function BottomNav({ view, setView }: { view: View; setView: (v: View) =>
       ))}
     </div>
   );
+}
+
+function ActivityIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-[21px] w-[21px]"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>;
 }
 
 export function Fab({ show, onClick }: { show: boolean; onClick: () => void }) {
